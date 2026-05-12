@@ -1,7 +1,7 @@
 import customtkinter as ctk
 from tkinter import messagebox
 from mongodb import users_collection
-from dashboard import AdminDashboard, UserDashboard
+from admin.admin_dashboard import AdminDashboard
 
 class LoginApp(ctk.CTk):
 
