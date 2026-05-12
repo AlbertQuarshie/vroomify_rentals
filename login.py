@@ -1,7 +1,7 @@
 import customtkinter as ctk
 from tkinter import messagebox
 from mongodb import users_collection
-
+from dashboard import AdminDashboard, UserDashboard
 
 class LoginApp(ctk.CTk):
 
@@ -27,9 +27,6 @@ class LoginApp(ctk.CTk):
         self.login_btn = ctk.CTkButton(self, text="Login", command=self.login)
         self.login_btn.pack(pady=20)
 
-    # =========================
-    # LOGIN FUNCTION
-    # =========================
     def login(self):
 
         username = self.username_entry.get()
@@ -52,7 +49,12 @@ class LoginApp(ctk.CTk):
 
             self.destroy()
 
-            
+            if role == "admin":
+                app = AdminDashboard()
+                app.mainloop()
+            else:
+                app = UserDashboard(username)
+                app.mainloop()
 
         else:
             messagebox.showerror("Error", "Invalid username or password")
