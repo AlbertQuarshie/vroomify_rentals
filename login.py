@@ -14,13 +14,13 @@ class LoginApp(ctk.CTk):
         self.title_label = ctk.CTkLabel(self, text="Login", font=("Arial", 24))
         self.title_label.pack(pady=20)
 
-        self.username_entry = ctk.CTkEntry(self, placeholder_text="Username", width=200)
-        self.username_entry.pack(pady=10)
+        self.email_entry = ctk.CTkEntry(self, placeholder_text="Email Address", width=250)
+        self.email_entry.pack(pady=10)
 
-        self.password_entry = ctk.CTkEntry(self, placeholder_text="Password", show="*", width=200)
+        self.password_entry = ctk.CTkEntry(self, placeholder_text="Password", show="*", width=250)
         self.password_entry.pack(pady=10)
 
-        self.login_btn = ctk.CTkButton(self, text="Login", command=self.login)
+        self.login_btn = ctk.CTkButton(self, text="Login", command=self.login, width=250)
         self.login_btn.pack(pady=20)
 
         # Signup Link
@@ -33,24 +33,31 @@ class LoginApp(ctk.CTk):
             fg_color="transparent", 
             text_color=("black", "white"),
             hover_color=("gray70", "gray30"),
-            command=self.on_signup_request # Triggers the switch in app.py
+            command=self.on_signup_request
         )
         self.signup_btn.pack(pady=5)
 
     def login(self):
-        username = self.username_entry.get()
+        email = self.email_entry.get()
         password = self.password_entry.get()
 
-        if not username or not password:
-            messagebox.showerror("Error", "All fields are required")
+        if not email or not password:
+            messagebox.showerror("Error", "Please enter both email and password")
             return
 
-        user = users_collection.find_one({"username": username, "password": password})
+        # Query using email
+        user = users_collection.find_one({
+            "email": email, 
+            "password": password
+        })
 
         if user:
             role = user.get("role", "user")
-            messagebox.showinfo("Success", "Login successful")
+
+            display_name = user.get("first_name", "User")
+            
+            messagebox.showinfo("Success", f"Welcome back, {display_name}!")
             self.destroy()
-            self.on_success(role, username)
+            self.on_success(role, display_name)
         else:
-            messagebox.showerror("Error", "Invalid username or password")
+            messagebox.showerror("Error", "Invalid email or password")
