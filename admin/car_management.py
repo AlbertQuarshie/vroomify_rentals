@@ -1,73 +1,80 @@
 import customtkinter as ctk
 from tkinter import messagebox, ttk, filedialog
-from mongodb import cars_collection
+from mongodb import db, cars_collection  # Assuming 'db' is your database object
 from bson.objectid import ObjectId
 from PIL import Image
 import os
+
+# Collection Reference for the Grouped Data
+car_models_col = db["car_models"]
 
 class CarManagementFrame(ctk.CTkFrame):
     def __init__(self, master):
         super().__init__(master)
         
-        self.selected_car_id = None  # Tracks if we are editing an existing car
-        self.image_path = ""         # Stores the path of the imported image
+        self.selected_car_id = None  # Stores the ID of the specific unit from 'cars'
+        self.image_path = ""         # Stores the path for the car model image
 
         self.grid_columnconfigure(1, weight=1)
         self.grid_rowconfigure(0, weight=1)
 
-   
-        self.form_frame = ctk.CTkScrollableFrame(self, width=320, label_text="Vehicle Details")
+        # =========================
+        # LEFT SIDE: FORM
+        # =========================
+        self.form_frame = ctk.CTkScrollableFrame(self, width=340, label_text="Vehicle Details")
         self.form_frame.grid(row=0, column=0, padx=10, pady=10, sticky="nsew")
 
-        self.brand_entry = self.create_input("Brand")
-        self.model_entry = self.create_input("Model")
+        # Input Fields
+        self.brand_entry = self.create_input("Brand (e.g., Toyota)")
+        self.model_entry = self.create_input("Model (e.g., Camry)")
         self.year_entry = self.create_input("Year")
-        self.plate_entry = self.create_input("Plate Number")
-        self.price_entry = self.create_input("Price per Day ($)")
-        
-        ctk.CTkLabel(self.form_frame, text="Status:").pack(pady=(10, 0), anchor="w", padx=20)
-        self.status_var = ctk.StringVar(value="Available")
-        self.status_dropdown = ctk.CTkComboBox(self.form_frame, values=["Available", "Rented", "Maintenance"], variable=self.status_var)
-        self.status_dropdown.pack(pady=5, padx=20, fill="x")
+        self.price_entry = self.create_input("Daily Price ($)")
+        self.plate_entry = self.create_input("Specific Plate Number")
 
-        # Image Import Section
-        self.image_label = ctk.CTkLabel(self.form_frame, text="No Image Selected", fg_color="gray30", height=100, corner_radius=10)
-        self.image_label.pack(pady=15, padx=20, fill="x")
+        # Image Display Area
+        self.image_label = ctk.CTkLabel(
+            self.form_frame, text="No Image Selected", 
+            fg_color="gray25", height=120, corner_radius=10
+        )
+        self.image_label.pack(pady=10, padx=20, fill="x")
         
-        self.import_btn = ctk.CTkButton(self.form_frame, text="Import Car Image", command=self.import_image, fg_color="#2874A6")
-        self.import_btn.pack(pady=5, padx=20, fill="x")
+        ctk.CTkButton(self.form_frame, text="Import Image", command=self.import_image, fg_color="#2874A6").pack(pady=5, padx=20, fill="x")
 
         # Action Buttons
-        self.add_btn = ctk.CTkButton(self.form_frame, text="Add New Car", command=self.save_car, fg_color="#1E8449")
+        self.add_btn = ctk.CTkButton(self.form_frame, text="Add New to Fleet", fg_color="#1E8449", command=self.save_car)
         self.add_btn.pack(pady=(20, 5), padx=20, fill="x")
 
-        self.update_btn = ctk.CTkButton(self.form_frame, text="Update Selected", command=self.update_car, state="disabled")
+        self.update_btn = ctk.CTkButton(self.form_frame, text="Update Selected", state="disabled", command=self.update_car)
         self.update_btn.pack(pady=5, padx=20, fill="x")
 
-        self.clear_btn = ctk.CTkButton(self.form_frame, text="Clear Form", command=self.clear_entries, fg_color="gray")
+        self.clear_btn = ctk.CTkButton(self.form_frame, text="Clear Form", fg_color="gray", command=self.clear_entries)
         self.clear_btn.pack(pady=5, padx=20, fill="x")
 
         self.delete_btn = ctk.CTkButton(self.form_frame, text="Delete Vehicle", fg_color="#922B21", command=self.delete_car)
         self.delete_btn.pack(pady=(20, 5), padx=20, fill="x")
 
+        # =========================
+        # RIGHT SIDE: TABLE
+        # =========================
         self.table_frame = ctk.CTkFrame(self)
         self.table_frame.grid(row=0, column=1, padx=10, pady=10, sticky="nsew")
         
-        cols = ("ID", "Brand", "Model", "Year", "Plate", "Price", "Status")
+        # Configure Table Columns
+        cols = ("Plate", "Brand", "Model", "Price", "Status")
         self.tree = ttk.Treeview(self.table_frame, columns=cols, show='headings')
         
         for col in cols:
             self.tree.heading(col, text=col)
-            self.tree.column(col, width=100 if col != "ID" else 50)
+            self.tree.column(col, width=100)
 
         self.tree.pack(fill="both", expand=True)
-        self.tree.bind("<<TreeviewSelect>>", self.on_car_select) # Bind selection event
+        self.tree.bind("<<TreeviewSelect>>", self.on_car_select)
         
-        self.load_cars()
+        self.load_table()
 
     def create_input(self, placeholder):
         entry = ctk.CTkEntry(self.form_frame, placeholder_text=placeholder)
-        entry.pack(pady=10, padx=20, fill="x")
+        entry.pack(pady=8, padx=20, fill="x")
         return entry
 
     # --- LOGIC ---
@@ -76,97 +83,129 @@ class CarManagementFrame(ctk.CTkFrame):
         file_path = filedialog.askopenfilename(filetypes=[("Image Files", "*.png *.jpg *.jpeg")])
         if file_path:
             self.image_path = file_path
-            filename = os.path.basename(file_path)
-            self.image_label.configure(text=f"Image: {filename[:20]}...")
+            self.image_label.configure(text="Image Selected ✅")
 
     def on_car_select(self, event):
-        """Triggered when a row is clicked - fills the form for editing"""
+        """Fetches data from BOTH collections when a row is clicked"""
         selected = self.tree.selection()
         if not selected: return
 
-        values = self.tree.item(selected[0])['values']
-        self.selected_car_id = values[0]
+        plate = self.tree.item(selected[0])['values'][0]
         
-        # Find car in DB to get full data (like image path)
-        car = cars_collection.find_one({"_id": ObjectId(self.selected_car_id)})
+        # 1. Get physical unit info
+        car_unit = cars_collection.find_one({"plate_number": plate})
+        if not car_unit: return
+        self.selected_car_id = car_unit["_id"]
+
+        # 2. Get model details info
+        model_details = car_models_col.find_one({"_id": car_unit["model_id"]})
         
-        if car:
+        if model_details:
             self.clear_entries(reset_id=False)
-            self.brand_entry.insert(0, car.get('brand', ''))
-            self.model_entry.insert(0, car.get('model', ''))
-            self.year_entry.insert(0, car.get('year', ''))
-            self.plate_entry.insert(0, car.get('plate_number', ''))
-            self.price_entry.insert(0, str(car.get('price', '')))
-            self.status_var.set(car.get('status', 'Available'))
-            self.image_path = car.get('image', '')
+            self.brand_entry.insert(0, model_details.get('brand', ''))
+            self.model_entry.insert(0, model_details.get('model', ''))
+            self.year_entry.insert(0, model_details.get('year', ''))
+            self.price_entry.insert(0, str(model_details.get('price', '')))
+            self.plate_entry.insert(0, car_unit.get('plate_number', ''))
             
-            if self.image_path:
-                self.image_label.configure(text=f"Existing Image Loaded")
+            self.image_path = model_details.get('image', '')
+            self.image_label.configure(text="Image Loaded" if self.image_path else "No Image")
             
-            self.update_btn.configure(state="normal")
+            # Switch to Edit Mode
             self.add_btn.configure(state="disabled")
+            self.update_btn.configure(state="normal")
 
     def save_car(self):
-        """Adds a new car to MongoDB"""
-        data = self.get_form_data()
-        if data:
-            cars_collection.insert_one(data)
-            messagebox.showinfo("Success", "New vehicle added")
-            self.load_cars()
+        """Logic for adding a brand new car and checking if model exists"""
+        brand, model, plate = self.brand_entry.get(), self.model_entry.get(), self.plate_entry.get()
+        
+        if not all([brand, model, plate]):
+            messagebox.showerror("Error", "Brand, Model, and Plate are required")
+            return
+
+        try:
+            # 1. Handle car_models
+            model_record = car_models_col.find_one({"brand": brand, "model": model})
+            if not model_record:
+                model_id = car_models_col.insert_one({
+                    "brand": brand, "model": model, "year": self.year_entry.get(),
+                    "price": float(self.price_entry.get()), "image": self.image_path,
+                    "total_stock": 1, "available_count": 1
+                }).inserted_id
+            else:
+                model_id = model_record["_id"]
+                car_models_col.update_one({"_id": model_id}, {"$inc": {"total_stock": 1, "available_count": 1}})
+
+            # 2. Handle specific unit
+            cars_collection.insert_one({
+                "model_id": model_id, "plate_number": plate, "status": "Available"
+            })
+            
+            messagebox.showinfo("Success", "New vehicle added to fleet")
+            self.load_table()
             self.clear_entries()
+        except Exception as e:
+            messagebox.showerror("Error", f"Failed to save: {e}")
 
     def update_car(self):
-        """Updates the currently selected car"""
+        """Updates the model (for all units) and the plate (for this unit)"""
         if not self.selected_car_id: return
         
-        data = self.get_form_data()
-        if data:
-            cars_collection.update_one({"_id": ObjectId(self.selected_car_id)}, {"$set": data})
-            messagebox.showinfo("Success", "Vehicle updated successfully")
-            self.load_cars()
-            self.clear_entries()
+        unit = cars_collection.find_one({"_id": self.selected_car_id})
+        model_id = unit["model_id"]
 
-    def get_form_data(self):
         try:
-            return {
+            # Update Model Details (Universal)
+            car_models_col.update_one({"_id": model_id}, {"$set": {
                 "brand": self.brand_entry.get(),
                 "model": self.model_entry.get(),
                 "year": self.year_entry.get(),
-                "plate_number": self.plate_entry.get(),
                 "price": float(self.price_entry.get()),
-                "status": self.status_var.get(),
                 "image": self.image_path
-            }
-        except ValueError:
-            messagebox.showerror("Error", "Price must be a number")
-            return None
+            }})
 
-    def load_cars(self):
+            # Update Unit Details (Specific)
+            cars_collection.update_one({"_id": self.selected_car_id}, {"$set": {
+                "plate_number": self.plate_entry.get()
+            }})
+
+            messagebox.showinfo("Success", "Details updated successfully")
+            self.load_table()
+            self.clear_entries()
+        except Exception as e:
+            messagebox.showerror("Error", str(e))
+
+    def load_table(self):
         for i in self.tree.get_children(): self.tree.delete(i)
         for car in cars_collection.find():
-            self.tree.insert("", "end", values=(
-                str(car["_id"]), car.get("brand"), car.get("model"), 
-                car.get("year"), car.get("plate_number"), f"${car.get('price')}", 
-                car.get("status")
-            ))
+            m = car_models_col.find_one({"_id": car["model_id"]})
+            if m:
+                self.tree.insert("", "end", values=(
+                    car.get("plate_number"), m.get("brand"), m.get("model"), 
+                    f"${m.get('price')}", car.get("status")
+                ))
 
     def delete_car(self):
         if not self.selected_car_id: return
-        if messagebox.askyesno("Confirm", "Delete this vehicle?"):
-            cars_collection.delete_one({"_id": ObjectId(self.selected_car_id)})
-            self.load_cars()
+        if messagebox.askyesno("Confirm", "Are you sure you want to delete this specific unit?"):
+            # Find the model_id to decrement stock before deleting unit
+            unit = cars_collection.find_one({"_id": self.selected_car_id})
+            car_models_col.update_one({"_id": unit["model_id"]}, {"$inc": {"total_stock": -1, "available_count": -1}})
+            
+            cars_collection.delete_one({"_id": self.selected_car_id})
+            self.load_table()
             self.clear_entries()
 
     def clear_entries(self, reset_id=True):
         if reset_id:
             self.selected_car_id = None
-            self.update_btn.configure(state="disabled")
             self.add_btn.configure(state="normal")
+            self.update_btn.configure(state="disabled")
         
         self.brand_entry.delete(0, 'end')
         self.model_entry.delete(0, 'end')
         self.year_entry.delete(0, 'end')
-        self.plate_entry.delete(0, 'end')
         self.price_entry.delete(0, 'end')
+        self.plate_entry.delete(0, 'end')
         self.image_path = ""
         self.image_label.configure(text="No Image Selected")
