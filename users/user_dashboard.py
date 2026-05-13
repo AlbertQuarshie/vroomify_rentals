@@ -1,19 +1,18 @@
 import customtkinter as ctk
 from tkinter import messagebox
-from mongodb import db, cars_collection, rentals_collection
+from mongodb import db, rentals_collection
 from users.available_cars import AvailableCarsFrame
 from users.my_rentals import MyRentalsFrame
 
-# Collection for accurate stats
+# Collection for accurate inventory stats
 car_models_col = db["car_models"]
 
-class UserDashboard(ctk.CTk):
-    def __init__(self, username):
-        super().__init__()
-
+class UserDashboard(ctk.CTkFrame):
+    def __init__(self, master, username, on_logout):
+        super().__init__(master)
         self.username = username
-        self.title(f"Vroomify - {self.username}")
-        self.geometry("1100x750")
+        self.on_logout = on_logout
+
 
         self.sidebar = ctk.CTkFrame(self, width=200)
         self.sidebar.pack(side="left", fill="y")
@@ -29,7 +28,6 @@ class UserDashboard(ctk.CTk):
         ctk.CTkButton(self.sidebar, text="Available Cars", command=self.show_available_cars).pack(pady=10, padx=20)
         ctk.CTkButton(self.sidebar, text="My Rentals", command=self.show_my_rentals).pack(pady=10, padx=20)
         
-        # Placeholder buttons for future features
         ctk.CTkButton(self.sidebar, text="Profile", command=lambda: self.placeholder("Profile")).pack(pady=10, padx=20)
 
         ctk.CTkButton(
@@ -40,7 +38,8 @@ class UserDashboard(ctk.CTk):
             command=self.logout
         ).pack(side="bottom", pady=30, padx=20)
 
-      
+
+
         self.main = ctk.CTkFrame(self)
         self.main.pack(fill="both", expand=True, padx=20, pady=20)
 
@@ -91,5 +90,5 @@ class UserDashboard(ctk.CTk):
         ctk.CTkLabel(self.main, text=f"{name} Section\n(Under Development)", font=("Arial", 20)).pack(pady=50)
 
     def logout(self):
-        self.destroy()
-        messagebox.showinfo("Logout", "Logged out successfully")
+        if messagebox.askyesno("Logout", "Are you sure you want to log out?"):
+            self.on_logout()
