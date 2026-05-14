@@ -3,6 +3,7 @@ from tkinter import messagebox
 from mongodb import db, rentals_collection
 from users.available_cars import AvailableCarsFrame
 from users.my_rentals import MyRentalsFrame
+from users.profile_frame import ProfileFrame  # Import the standalone file
 
 # Collection for accurate inventory stats
 car_models_col = db["car_models"]
@@ -12,7 +13,6 @@ class UserDashboard(ctk.CTkFrame):
         super().__init__(master)
         self.username = username
         self.on_logout = on_logout
-
 
         self.sidebar = ctk.CTkFrame(self, width=200)
         self.sidebar.pack(side="left", fill="y")
@@ -28,7 +28,8 @@ class UserDashboard(ctk.CTkFrame):
         ctk.CTkButton(self.sidebar, text="Available Cars", command=self.show_available_cars).pack(pady=10, padx=20)
         ctk.CTkButton(self.sidebar, text="My Rentals", command=self.show_my_rentals).pack(pady=10, padx=20)
         
-        ctk.CTkButton(self.sidebar, text="Profile", command=lambda: self.placeholder("Profile")).pack(pady=10, padx=20)
+        # Linked to the new show_profile method
+        ctk.CTkButton(self.sidebar, text="Profile", command=self.show_profile).pack(pady=10, padx=20)
 
         ctk.CTkButton(
             self.sidebar, 
@@ -37,8 +38,6 @@ class UserDashboard(ctk.CTkFrame):
             hover_color="#641E16",
             command=self.logout
         ).pack(side="bottom", pady=30, padx=20)
-
-
 
         self.main = ctk.CTkFrame(self)
         self.main.pack(fill="both", expand=True, padx=20, pady=20)
@@ -84,6 +83,12 @@ class UserDashboard(ctk.CTkFrame):
         self.clear_main_area()
         rentals_view = MyRentalsFrame(self.main, self.username)
         rentals_view.pack(fill="both", expand=True)
+
+    def show_profile(self):
+        """Swaps the main area to the ProfileFrame"""
+        self.clear_main_area()
+        # Uses the standalone ProfileFrame from users/profile_frame.py
+        ProfileFrame(self.main, self.username).pack(fill="both", expand=True)
 
     def placeholder(self, name):
         self.clear_main_area()
