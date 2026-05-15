@@ -39,13 +39,13 @@ python app.py
   - You can use the search query to search and also sort the cars by name, price, year of manufacture etc
 
 3. Book the car of your choice
-  - 
+  - After selecting the desired car you need you can proceed to place a rental request of which it will need the approval of the system admin.
 
 ### E. Features
 
-1. Interactive Gameplay
+1. Personalized Dashboard
 
-- Console-based interface with real-time feedback on user guesses.
+- Each user has a dashboard that caters to their 
 - Difficulty levels that dynamically adjust the number of attempts.
 
 2. Input Validation
