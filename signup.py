@@ -13,14 +13,29 @@ class SignupApp(ctk.CTkFrame):
         
         ctk.CTkLabel(self.scroll_frame, text="Sign Up", font=("Arial", 24, "bold")).pack(pady=20) 
         
+        # --- INPUT FIELDS  ---
         self.first_name = ctk.CTkEntry(self.scroll_frame, placeholder_text="First Name", width=300) 
+        self.first_name.pack(pady=8)
+
         self.last_name = ctk.CTkEntry(self.scroll_frame, placeholder_text="Last Name", width=300) 
+        self.last_name.pack(pady=8)
+
         self.email = ctk.CTkEntry(self.scroll_frame, placeholder_text="Email Address", width=300) 
+        self.email.pack(pady=8)
+
         self.id_number = ctk.CTkEntry(self.scroll_frame, placeholder_text="Identification Number", width=300) 
+        self.id_number.pack(pady=8)
+
         self.phone = ctk.CTkEntry(self.scroll_frame, placeholder_text="Phone Number", width=300) 
+        self.phone.pack(pady=8)
+
         self.password = ctk.CTkEntry(self.scroll_frame, placeholder_text="Password", show="*", width=300) 
+        self.password.pack(pady=8)
+
         self.confirm_password = ctk.CTkEntry(self.scroll_frame, placeholder_text="Confirm Password", show="*", width=300) 
+        self.confirm_password.pack(pady=8)
         
+        # --- ACTION BUTTONS ---
         self.register_btn = ctk.CTkButton(self.scroll_frame, text="Create Account", command=self.register_user, width=300, height=40) 
         self.register_btn.pack(pady=20)
         
@@ -53,4 +68,4 @@ class SignupApp(ctk.CTkFrame):
             messagebox.showerror("Database Error", f"Could not save user: {e}") 
 
     def go_back(self):
-        self.on_back_to_login() 
+        self.on_back_to_login()
