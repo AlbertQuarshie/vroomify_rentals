@@ -7,7 +7,7 @@
 ## B. Overview
 
 - A car renting platform whereby users log in and proceed to rent a vehicle of their choosing at the selected duration and price
-- 
+-
 
 ### C. Installation
 
@@ -20,9 +20,9 @@ git clone https://github.com/AlbertQuarshie/vroomify_rentals.git
 cd vroomify_rentals
 ```
 
-2. Run the Game
+2. Run the Application
 
-- The project requires Python 3 or later.
+- The project requires Python 3.14 or later.
 
 ```bash
 python app.py
@@ -34,34 +34,37 @@ python app.py
    Run the Python file.
    You’ll be prompted to login and if you don't have an account you have to register
 
-
 2. Browse a variety of available cars
-  - You can use the search query to search and also sort the cars by name, price, year of manufacture etc
+
+- You can use the search query to search and also sort the cars by name, price, year of manufacture etc
 
 3. Book the car of your choice
-  - After selecting the desired car you need you can proceed to place a rental request of which it will need the approval of the system admin.
+
+- After selecting the desired car you need you can proceed to place a rental request of which it will need the approval of the system admin.
 
 ### E. Features
 
-1. Personalized Dashboard
+1. Personalized  User Dashboard
 
-- Each user has a dashboard that caters to their 
-- Difficulty levels that dynamically adjust the number of attempts.
+- The client-facing side of VROOMIFY focuses on an intuitive, fluid interface for customers looking to discover and secure car bookings.
 
-2. Input Validation
+2. GUI Architecture
 
-- Handles invalid inputs and out-of-range guesses gracefully.
+- Utilizes Python's customtkinter with an optimized, non-blocking single-window layout framework (VroomifyApp) swapping contextual instances of ctk.CTkFrame components to prevent desktop clutter or multiple window spawns.
 
-3. Randomized Challenge
+3. Database Design
 
-- Each session generates a new random number between 1 and 100
+- NoSQL backend structure leveraging MongoDB aggregation pipelines to efficiently sum and group real-time metrics (like processing $sum conditions for active financial balances or counting targeted documentation states).
 
-4. Simple and Lightweight
+4. Rental Approvals Pipeline
 
-- No external dependencies beyond Python’s standard library.
+- An administrative verification queue to safely audit incoming customer booking files and toggle statuses between pending flags and approved checkouts.
 
 ## F. Tech Stack
 
-- Programming Language Python 3
-- Random Number Generation random module
-- Execution Environment Console / Terminal
+| Layer       | Technology     |
+| ----------- | -------------- |
+| Environment | Python 3.14.4  |
+| GUI         | Custom Tkinter |
+| Database    | Mongodb        |
+| Charts      | Matplottb      |
