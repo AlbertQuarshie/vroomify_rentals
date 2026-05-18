@@ -4,6 +4,7 @@ from PIL import Image
 from users.checkout import CheckoutWindow
 import os
 
+# Database collection reference
 car_models_col = db["car_models"]
 
 class AvailableCarsFrame(ctk.CTkFrame): 
@@ -11,14 +12,16 @@ class AvailableCarsFrame(ctk.CTkFrame):
         super().__init__(master)
         self.username = username 
         
-        # --- TOP CONTROL BAR (Search & Sort) ---
+        # Search and filter header bar
         self.controls = ctk.CTkFrame(self, fg_color="transparent")
         self.controls.pack(fill="x", padx=20, pady=10)
 
+        # Search input field
         self.search_entry = ctk.CTkEntry(self.controls, placeholder_text="Search cars...", width=250)
         self.search_entry.pack(side="left", padx=5)
         self.search_entry.bind("<KeyRelease>", lambda e: self.load_models())
 
+        # Sort preference selector
         self.sort_var = ctk.StringVar(value="Price: Low to High")
         self.sort_dropdown = ctk.CTkComboBox(
             self.controls, 
@@ -28,7 +31,7 @@ class AvailableCarsFrame(ctk.CTkFrame):
         )
         self.sort_dropdown.pack(side="right", padx=5)
 
-        # --- SCROLLABLE GRID ---
+        # Main scrollable view for car cards
         self.scroll_container = ctk.CTkScrollableFrame(self, label_text="Fleet Vehicles")
         self.scroll_container.pack(fill="both", expand=True, padx=10, pady=10)
         self.scroll_container.grid_columnconfigure((0, 1, 2), weight=1)
@@ -36,11 +39,12 @@ class AvailableCarsFrame(ctk.CTkFrame):
         self.load_models()
 
     def load_models(self):
-        # Clear existing cards
+        """Fetches car models from DB and renders them in a grid layout"""
+        # Clear existing cards before reload
         for widget in self.scroll_container.winfo_children(): 
             widget.destroy()
 
-        # 1. Build Query (FIX: Removed the available_count constraint)
+        # Build search query filter
         filter_criteria = {}
         search_query = self.search_entry.get()
         if search_query:
@@ -49,7 +53,7 @@ class AvailableCarsFrame(ctk.CTkFrame):
                 {"model": {"$regex": search_query, "$options": "i"}}
             ]
 
-        # 2. Determine Sort
+        # Determine database sort ordering
         sort_choice = self.sort_var.get()
         sort_field = "price"
         sort_direction = 1 
@@ -60,21 +64,21 @@ class AvailableCarsFrame(ctk.CTkFrame):
             sort_field = "year"
             sort_direction = -1
 
-        # 3. Fetch Data
+        # Retrieve documents from MongoDB
         models = list(car_models_col.find(filter_criteria).sort(sort_field, sort_direction))
         
+        # Render item entries dynamically
         r, c = 0, 0
         for model in models:
-            # Check if this model variant is currently available
             available_count = model.get('available_count', 0)
             is_available = available_count > 0
 
-            # Dynamic styling options depending on availability
+            # Card frame border adjustment based on availability
             border_color = "gray30" if is_available else "#922B21"
             card = ctk.CTkFrame(self.scroll_container, corner_radius=15, border_width=1, border_color=border_color)
             card.grid(row=r, column=c, padx=15, pady=15, sticky="nsew")
 
-            # Load Image
+            # Vehicle photo loading handling
             path = model.get("image", "")
             if path and os.path.exists(path):
                 try:
@@ -86,18 +90,18 @@ class AvailableCarsFrame(ctk.CTkFrame):
             else:
                 ctk.CTkLabel(card, text="No Image", height=120, fg_color="gray20").pack(pady=10)
 
-            # --- TITLE LABEL (With optional cross-out format) ---
+            # Title label configuration (strikes through if rented out)
             title_text = f"{model['brand']} {model['model']} ({model.get('year', 'N/A')})"
             if is_available:
                 title_font = ("Arial", 15, "bold")
                 title_color = ("black", "white")
             else:
-                title_font = ("Arial", 15, "bold", "overstrike") # Standard Tkinter Strikethrough
+                title_font = ("Arial", 15, "bold", "overstrike") 
                 title_color = "gray50"
 
             ctk.CTkLabel(card, text=title_text, font=title_font, text_color=title_color).pack()
             
-            # --- STOCK STATUS LABEL ---
+            # Stock status metadata indicators
             if is_available:
                 stock_text = f"Only {available_count} left!" if available_count < 3 else f"{available_count} available"
                 stock_color = "#E67E22"
@@ -107,11 +111,11 @@ class AvailableCarsFrame(ctk.CTkFrame):
                 
             ctk.CTkLabel(card, text=stock_text, text_color=stock_color, font=("Arial", 12, "bold")).pack()
             
-            # --- PRICE LABEL ---
+            # Pricing readout section
             price_color = "#2ECC71" if is_available else "gray50"
             ctk.CTkLabel(card, text=f"KES {model['price']}/day", font=("Arial", 18), text_color=price_color).pack(pady=5)
             
-            # --- ACTION BUTTON ---
+            # Form button control configuration depending on stock
             if is_available:
                 ctk.CTkButton(
                     card, 
@@ -127,10 +131,12 @@ class AvailableCarsFrame(ctk.CTkFrame):
                     text_color="gray50"
                 ).pack(pady=10, padx=20)
 
+            # Row and column layout positioning steps
             c += 1
             if c > 2: 
                 c = 0
                 r += 1
 
     def open_checkout(self, model_data):
+        """Launches the independent rental setup dialog"""
         CheckoutWindow(self, model_data, self.username)

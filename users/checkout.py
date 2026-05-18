@@ -9,25 +9,25 @@ class CheckoutWindow(ctk.CTkToplevel):
         self.model_data = model_data
         self.username = username
         
-        # --- Window Setup & Constraints ---
+        # Root window geometry constraints
         self.title("Request Rental - Vroomify")
-        self.geometry("460x520")  # Tailored height to completely remove any bottom gap
+        self.geometry("460x520")  
         self.resizable(False, False)
         self.attributes('-topmost', True)
         
-        # Color Palette Variables
+        # Color palette layout definitions
         self.font_family = "Arial"
         self.primary_blue = "#3498DB"
         self.dark_accent = "#2C3E50"
 
-        # --- 1. Header Title Section ---
+        # Frame section header text string
         ctk.CTkLabel(
             self, text="RENTAL REQUEST", 
             font=(self.font_family, 22, "bold"), 
             text_color=self.primary_blue
         ).pack(pady=(30, 15))
         
-        # --- 2. Information Card Box ---
+        # Selected vehicle details card layout block
         self.vehicle_card = ctk.CTkFrame(
             self, fg_color=("#F5F5F5", "#242424"), 
             corner_radius=12, border_width=1, border_color=("#E0E0E0", "#333333")
@@ -37,11 +37,10 @@ class CheckoutWindow(ctk.CTkToplevel):
         card_content = ctk.CTkFrame(self.vehicle_card, fg_color="transparent")
         card_content.pack(padx=20, pady=15, fill="x")
         
-        # Using a balanced grid inside the card for pixel-perfect vertical alignment
         card_content.columnconfigure(0, weight=1)
         card_content.columnconfigure(1, weight=1)
 
-        # Dynamic Data Row Mappings
+        # Field property value arrays
         details = [
             ("Vehicle Brand", model_data['brand']),
             ("Model Name", model_data['model']),
@@ -49,20 +48,19 @@ class CheckoutWindow(ctk.CTkToplevel):
             ("Daily Rate", f"KES {model_data['price']:,.2f}")
         ]
         
+        # Grid loop generation steps
         for idx, (lbl, val) in enumerate(details):
-            # Left aligned descriptive label strings
             ctk.CTkLabel(
                 card_content, text=lbl, font=(self.font_family, 13), 
                 text_color="#888888", anchor="w"
             ).grid(row=idx, column=0, pady=4, sticky="w")
             
-            # Right aligned formatted context data values
             ctk.CTkLabel(
                 card_content, text=val, font=(self.font_family, 14, "bold"), 
                 text_color=("#222222", "#ECF0F1"), anchor="e"
             ).grid(row=idx, column=1, pady=4, sticky="e")
 
-        # --- 3. Interaction Fields & Calculation Layout ---
+        # Input fields container elements
         input_frame = ctk.CTkFrame(self, fg_color="transparent")
         input_frame.pack(fill="x", padx=40, pady=20)
 
@@ -71,6 +69,7 @@ class CheckoutWindow(ctk.CTkToplevel):
             font=(self.font_family, 13, "bold"), text_color=("#555555", "#AAAAAA")
         ).pack(anchor="w", pady=(0, 8))
 
+        # Booking duration number field setup
         self.days_entry = ctk.CTkEntry(
             input_frame, placeholder_text="Enter number of days (e.g. 5)",
             height=45, font=(self.font_family, 14),
@@ -80,19 +79,18 @@ class CheckoutWindow(ctk.CTkToplevel):
         self.days_entry.pack(fill="x", pady=(0, 15))
         self.days_entry.bind("<KeyRelease>", self.update_total)
 
-        # Highlight Accent Bar for Total Calculation
+        # Bottom estimated calculation panel wrapper
         self.total_bar = ctk.CTkFrame(input_frame, fg_color=("#EAEDED", "#1A1A1A"), corner_radius=8, height=50)
         self.total_bar.pack(fill="x")
         self.total_bar.pack_propagate(False)
 
-        # Centered the calculation readout within the high-contrast bar container
         self.total_label = ctk.CTkLabel(
             self.total_bar, text="Estimated Total: KES 0.00", 
             font=(self.font_family, 15, "bold"), text_color=("#2E86C1", "#5DADE2")
         )
         self.total_label.pack(side="left", padx=15)
 
-        # --- 4. Main Submission Button ---
+        # Primary transaction verification button setup
         self.submit_btn = ctk.CTkButton(
             self, text="SEND REQUEST FOR APPROVAL", 
             height=50, font=(self.font_family, 13, "bold"),
@@ -102,6 +100,7 @@ class CheckoutWindow(ctk.CTkToplevel):
         self.submit_btn.pack(fill="x", padx=40, pady=(5, 25))
 
     def update_total(self, event=None):
+        """Recalculates pricing estimation summary figures reactively"""
         try:
             days_input = self.days_entry.get().strip()
             if not days_input:
@@ -116,8 +115,8 @@ class CheckoutWindow(ctk.CTkToplevel):
         except ValueError: 
             self.total_label.configure(text="Estimated Total: KES--.-- (Invalid Day Count)")
 
-    
     def submit_request(self):
+        """Validates entry states and drops new transaction log records into MongoDB"""
         try:
             days_input = self.days_entry.get().strip()
             if not days_input:
@@ -126,6 +125,7 @@ class CheckoutWindow(ctk.CTkToplevel):
             days = int(days_input)
             if days <= 0: raise ValueError
 
+            # Transaction data initialization packet 
             rental_request = {
                 "username": self.username,
                 "model_id": self.model_data["_id"],

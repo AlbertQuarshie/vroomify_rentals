@@ -6,7 +6,6 @@ from users.my_rentals import MyRentalsFrame
 from users.profile_frame import ProfileFrame  
 from datetime import datetime, timedelta
 
-# Collection for accurate inventory stats
 car_models_col = db["car_models"]
 
 class UserDashboard(ctk.CTkFrame):
@@ -15,7 +14,7 @@ class UserDashboard(ctk.CTkFrame):
         self.username = username
         self.on_logout = on_logout
 
-        # Navigation Sidebar UI (Your exact original styling configuration)
+        # Sidebar dashboard layout navigation section frame
         self.sidebar = ctk.CTkFrame(self, width=200)
         self.sidebar.pack(side="left", fill="y")
 
@@ -26,6 +25,7 @@ class UserDashboard(ctk.CTkFrame):
             text_color="#3498DB"
         ).pack(pady=20)
 
+        # Tab interaction controls navigation configuration steps
         ctk.CTkButton(self.sidebar, text="Dashboard", command=self.show_home).pack(pady=10, padx=20)
         ctk.CTkButton(self.sidebar, text="Available Cars", command=self.show_available_cars).pack(pady=10, padx=20)
         ctk.CTkButton(self.sidebar, text="My Rentals", command=self.show_my_rentals).pack(pady=10, padx=20)
@@ -39,21 +39,21 @@ class UserDashboard(ctk.CTkFrame):
             command=self.logout
         ).pack(side="bottom", pady=30, padx=20)
 
-        # Main Workspace Canvas Viewport
+        # Core workspace viewer panels frame canvas setup
         self.main = ctk.CTkFrame(self)
         self.main.pack(fill="both", expand=True, padx=20, pady=20)
 
-        # Trigger Screen Build & Deadline Scanners
+        # Initial launch frames processing sequence tasks
         self.show_home()
         self.check_rental_deadlines()
 
     def clear_main_area(self):
-        """Clears the current view before loading a new frame"""
+        """Wipes previous tracking frames before loading subsequent windows layout"""
         for widget in self.main.winfo_children():
             widget.destroy()
 
     def check_rental_deadlines(self):
-        """Scans active user rentals for imminent or overdue contract deadlines"""
+        """Scans active user documents for critical return timeline thresholds"""
         try:
             active_rentals = list(rentals_collection.find({"username": self.username, "status": "Active"}))
         except Exception:
@@ -66,6 +66,7 @@ class UserDashboard(ctk.CTkFrame):
         overdue_cars = []
         nearing_deadline_cars = []
 
+        # Check timelines logs values comparisons loops execution paths
         for r in active_rentals:
             if "booking_date" in r:
                 booking_date = r["booking_date"]
@@ -78,6 +79,7 @@ class UserDashboard(ctk.CTkFrame):
                 elif deadline - now <= timedelta(hours=24):
                     nearing_deadline_cars.append(car_name)
 
+        # Display popup notice flags depending on timeline results
         if overdue_cars:
             cars_list = "\n- ".join(overdue_cars)
             messagebox.showwarning(
@@ -96,13 +98,12 @@ class UserDashboard(ctk.CTkFrame):
             )
 
     def show_home(self):
-        """Calculates and displays user-specific metrics, card logs, and shortcuts"""
+        """Constructs home layout frame dashboard summaries and metric cards"""
         self.clear_main_area()
         
-        # Original Title Style
         ctk.CTkLabel(self.main, text=f"Welcome back, {self.username}!", font=("Arial", 28, "bold")).pack(pady=15)
 
-        # ─── SECTION 1: TOP STATS ROW ───
+        # ─── SECTION 1: TOP STATS ROW OVERVIEWS ───
         stats_frame = ctk.CTkFrame(self.main, fg_color="transparent")
         stats_frame.pack(pady=5)
 
@@ -116,27 +117,26 @@ class UserDashboard(ctk.CTkFrame):
         except Exception:
             avail = 0
 
-        # Uniform structural cards matching your core layout parameters
+        # Create numerical overview boxes grid layout items definitions
         ctk.CTkLabel(stats_frame, text=f"Active Rentals\n{active}", width=210, height=100, fg_color="#2E86C1", corner_radius=12, font=("Arial", 15, "bold")).grid(row=0, column=0, padx=10)
         ctk.CTkLabel(stats_frame, text=f"Pending Approval\n{pending}", width=210, height=100, fg_color="#E67E22", corner_radius=12, font=("Arial", 15, "bold")).grid(row=0, column=1, padx=10)
         ctk.CTkLabel(stats_frame, text=f"Available Fleet\n{avail}", width=210, height=100, fg_color="#239B56", corner_radius=12, font=("Arial", 15, "bold")).grid(row=0, column=2, padx=10)
 
-        # ─── SECTION 2: RECENT RENTAL STATUS CARDS ───
+        # ─── SECTION 2: RECENT BOOKINGS MONITOR PANEL ───
         rentals_section = ctk.CTkFrame(self.main, fg_color="transparent")
         rentals_section.pack(pady=20, fill="x", padx=30)
 
         ctk.CTkLabel(rentals_section, text="⏱️ Recent Booking Applications", font=("Arial", 16, "bold"), text_color="#3498DB").pack(anchor="w", padx=10, pady=(0, 10))
 
-        # Horizontal sub-grid to house booking item cards side-by-side
         cards_row = ctk.CTkFrame(rentals_section, fg_color="transparent")
         cards_row.pack(fill="x")
 
         try:
-            # Fetch the 2 most recent applications submitted by the user
             recent_bookings = list(rentals_collection.find({"username": self.username}).sort("booking_date", -1).limit(2))
         except Exception:
             recent_bookings = []
 
+        # Populate horizontal item trackers layout columns loops steps
         if recent_bookings:
             for i, r in enumerate(recent_bookings):
                 brand = r.get("brand", "Unknown")
@@ -145,16 +145,13 @@ class UserDashboard(ctk.CTkFrame):
                 days = r.get("days", 0)
                 plate = r.get("plate_number", "Awaiting Assign")
 
-                # Setup card layout container block
                 card = ctk.CTkFrame(cards_row, fg_color=("#F2F4F4", "#2C3E50"), corner_radius=10, height=110)
                 card.grid(row=0, column=i, padx=10, sticky="nsew")
-                cards_row.grid_columnconfigure(i, weight=1) # Ensure cards take equal horizontal share
+                cards_row.grid_columnconfigure(i, weight=1) 
 
-                # Vehicle Details
                 ctk.CTkLabel(card, text=f"{brand} {model}", font=("Arial", 14, "bold")).pack(anchor="w", padx=15, pady=(12, 2))
                 ctk.CTkLabel(card, text=f"Duration: {days} Days  |  Plate: {plate}", font=("Arial", 12), text_color="gray").pack(anchor="w", padx=15, pady=2)
 
-                # Status Badge styling definitions
                 status_colors = {"Active": "#2E86C1", "Pending": "#E67E22", "Completed": "#239B56"}
                 badge_bg = status_colors.get(status, "gray")
 
@@ -170,12 +167,11 @@ class UserDashboard(ctk.CTkFrame):
                 )
                 badge.pack(anchor="w", padx=15, pady=(6, 12))
         else:
-            # Safe Fallback View card if no database records exist
             empty_card = ctk.CTkFrame(cards_row, fg_color=("#F2F4F4", "#2C3E50"), corner_radius=10, height=80)
             empty_card.pack(fill="x", padx=10)
             ctk.CTkLabel(empty_card, text="No previous bookings or rental requests tracked on this account node.", font=("Arial", 12, "italic"), text_color="gray").pack(pady=25)
 
-        # ─── SECTION 3: QUICK OPERATIONS HUB (MULTIPLE CTAs) ───
+        # ─── SECTION 3: QUICK OPERATION CTAS BUTTONS ───
         hub_container = ctk.CTkFrame(self.main, fg_color="transparent")
         hub_container.pack(pady=10)
 
@@ -184,26 +180,28 @@ class UserDashboard(ctk.CTkFrame):
         buttons_row = ctk.CTkFrame(hub_container, fg_color="transparent")
         buttons_row.pack()
 
-        # Aligned primary entry points styled dynamically to preserve the main layout framework
         ctk.CTkButton(buttons_row, text="Browse Fleet Vehicles", width=190, height=40, command=self.show_available_cars).grid(row=0, column=0, padx=8)
         ctk.CTkButton(buttons_row, text="Manage Active Rentals", width=190, height=40, fg_color="gray30", hover_color="gray20", command=self.show_my_rentals).grid(row=0, column=1, padx=8)
         ctk.CTkButton(buttons_row, text="Edit Account Profile", width=190, height=40, fg_color="gray40", hover_color="gray30", command=self.show_profile).grid(row=0, column=2, padx=8)
 
     def show_available_cars(self):
+        """Swaps the main canvas framework visibility focus items context to AvailableCarsFrame"""
         self.clear_main_area()
         grid_view = AvailableCarsFrame(self.main, self.username)
         grid_view.pack(fill="both", expand=True)
 
     def show_my_rentals(self):
+        """Swaps the main canvas framework visibility focus items context to MyRentalsFrame"""
         self.clear_main_area()
         rentals_view = MyRentalsFrame(self.main, self.username)
         rentals_view.pack(fill="both", expand=True)
 
     def show_profile(self):
-        """Swaps the main area to the ProfileFrame"""
+        """Swaps the main area to the ProfileFrame view"""
         self.clear_main_area()
         ProfileFrame(self.main, self.username).pack(fill="both", expand=True)
 
     def logout(self):
+        """Verifies context confirmations commands and passes callback tasks back up to root windows"""
         if messagebox.askyesno("Logout", "Are you sure you want to log out?"):
             self.on_logout()
