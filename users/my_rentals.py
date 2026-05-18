@@ -1,7 +1,7 @@
 import customtkinter as ctk
 from tkinter import messagebox
 from mongodb import db, rentals_collection, cars_collection
-from datetime import datetime
+from datetime import datetime, timedelta
 
 # Collection for restocking logic
 car_models_col = db["car_models"]
@@ -31,7 +31,7 @@ class MyRentalsFrame(ctk.CTkFrame):
         self.load_rentals()
 
     def load_rentals(self):
-        """Fetches and displays rental cards with high-level defensive checks"""
+        """Fetches and displays rental cards with dynamic deadline warnings"""
         # Clear current list
         for widget in self.scroll_container.winfo_children():
             widget.destroy()
@@ -51,6 +51,8 @@ class MyRentalsFrame(ctk.CTkFrame):
             ).pack()
             return
 
+        now = datetime.now()
+
         for r in rentals:
             status = r.get("status", "Pending")
             brand = r.get("brand") if r.get("brand") is not None else "Unknown"
@@ -59,22 +61,46 @@ class MyRentalsFrame(ctk.CTkFrame):
             days = r.get("days", 0)
             total = r.get("total_price", 0.0)
             
-            # Logic-based Color Coding
+            # Dynamic deadline warning checks for Active rentals
+            deadline_warning = None
+            warning_color = None
+            
+            if status == "Active" and "booking_date" in r:
+                booking_date = r["booking_date"]
+                deadline = booking_date + timedelta(days=days)
+                
+                if now > deadline:
+                    # Car is overdue
+                    overdue_delta = now - deadline
+                    days_overdue = overdue_delta.days
+                    if days_overdue == 0:
+                        deadline_warning = "⚠️ OVERDUE: Return vehicle immediately!"
+                    else:
+                        deadline_warning = f"⚠️ OVERDUE BY {days_overdue} DAY(S)!"
+                    warning_color = "#E74C3C"  # Crimson Red
+                elif deadline - now <= timedelta(hours=24):
+                    # Car is nearing the return deadline
+                    time_left = deadline - now
+                    hours_left = int(time_left.total_seconds() // 3600)
+                    deadline_warning = f"⏳ Nearing Deadline: {hours_left} hour(s) remaining!"
+                    warning_color = "#E67E22"  # Alert Orange
+
+            # Logic-based Card Border Color Coding
             if status == "Pending":
-                color = "#E67E22"  # Orange
+                color = "#E67E22"  
             elif status == "Active":
-                color = "#2ECC71"  # Green
+                # Use warning color as the frame border if the contract is compromised or nearing expiry
+                color = warning_color if warning_color else "#2ECC71"  
             elif status == "Rejected":
-                color = "#C0392B"  # Red
+                color = "#C0392B"  
             else:
-                color = "#7F8C8D"  # Gray (Completed)
+                color = "#7F8C8D"  
 
             # Create the Card UI
             card = ctk.CTkFrame(self.scroll_container, corner_radius=12, border_width=1, border_color=color)
             card.pack(fill="x", padx=15, pady=8)
 
             # --- LEFT SECTION: INFO AND REJECTION LOGIC ---
-            # Using an internal alignment container to stack the details and low stock warnings neatly
             text_container = ctk.CTkFrame(card, fg_color="transparent")
             text_container.pack(side="left", padx=20, pady=15, fill="both", expand=True)
 
@@ -84,14 +110,25 @@ class MyRentalsFrame(ctk.CTkFrame):
                 font=("Arial", 14, "bold")
             ).pack(anchor="w")
             
-            # Check if this particular record has a rejection explanation appended to it
+            # Visual Deadline Flag Placement
+            if deadline_warning:
+                warning_lbl = ctk.CTkLabel(
+                    text_container, 
+                    text=deadline_warning, 
+                    justify="left",
+                    font=("Arial", 12, "bold"), 
+                    text_color=warning_color
+                )
+                warning_lbl.pack(anchor="w", pady=(5, 0))
+            
+            # Rejection Notice Output Container
             rejection_reason = r.get("rejection_reason")
             if status == "Rejected" and rejection_reason:
                 reason_lbl = ctk.CTkLabel(
                     text_container, 
                     text=rejection_reason, 
                     justify="left",
-                    wraplength=480,  # Enforces reliable visual layout nesting on smaller resolution boxes
+                    wraplength=480,  
                     font=("Arial", 11, "italic"), 
                     text_color="#E74C3C"
                 )
@@ -101,9 +138,11 @@ class MyRentalsFrame(ctk.CTkFrame):
             status_container = ctk.CTkFrame(card, fg_color="transparent")
             status_container.pack(side="right", padx=20)
 
+            # Highlight status text with warning accent color if applicable
+            display_color = warning_color if warning_color else color
             ctk.CTkLabel(
                 status_container, text=status.upper(), 
-                text_color=color, font=("Arial", 12, "bold")
+                text_color=display_color, font=("Arial", 12, "bold")
             ).pack()
 
             # Show Plate Number only if Active/Completed and value exists
