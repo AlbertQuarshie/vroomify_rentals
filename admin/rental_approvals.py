@@ -207,7 +207,7 @@ class RentalApprovalsFrame(ctk.CTkFrame):
         self.load_requests()
 
     def approve_request(self, rental):
-        """Standard Approval Logic"""
+        """Standard Approval Logic with Cascade Low-Stock Checks"""
         car_unit = cars_collection.find_one({
             "model_id": rental["model_id"], 
             "status": "Available"
@@ -217,6 +217,7 @@ class RentalApprovalsFrame(ctk.CTkFrame):
             messagebox.showerror("Inventory Error", "No physical assigned units available to allocate!")
             return
 
+        # 1. Update the request being approved
         rentals_collection.update_one({"_id": rental["_id"]}, {
             "$set": {
                 "status": "Active", 
@@ -226,6 +227,33 @@ class RentalApprovalsFrame(ctk.CTkFrame):
         })
         cars_collection.update_one({"_id": car_unit["_id"]}, {"$set": {"status": "Rented"}})
         car_models_col.update_one({"_id": rental["model_id"]}, {"$inc": {"available_count": -1}})
+
+        # 2. Check if the newly updated available count hits 0
+        updated_model = car_models_col.find_one({"_id": rental["model_id"]})
+        if updated_model and updated_model.get("available_count", 0) <= 0:
+            
+            # Construct explanation text structure
+            rejection_message = (
+                f"Due to exceptionally high demand and limited stock for the "
+                f"{rental.get('brand', 'chosen')} {rental.get('model', 'vehicle')}, "
+                f"we were unfortunately unable to approve your reservation on this occasion, "
+                f"as another request was fulfilled just ahead of yours. Feel free to choose another available car. Sorry for the inconvenience"
+            )
+            
+            # Reject all OTHER requests matching this vehicle profile
+            rentals_collection.update_many(
+                {
+                    "model_id": rental["model_id"],
+                    "status": "Pending",
+                    "_id": {"$ne": rental["_id"]} # Exclude the user who just secured the car
+                },
+                {
+                    "$set": {
+                        "status": "Rejected",
+                        "rejection_reason": rejection_message
+                    }
+                }
+            )
 
         messagebox.showinfo("Success", f"Approved! Assigned Plate: {car_unit['plate_number']}")
         self.load_requests()

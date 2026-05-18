@@ -11,7 +11,6 @@ class MyRentalsFrame(ctk.CTkFrame):
         super().__init__(master)
         self.username = username
         
-     
         header = ctk.CTkFrame(self, fg_color="transparent")
         header.pack(fill="x", padx=20, pady=20)
         
@@ -26,7 +25,6 @@ class MyRentalsFrame(ctk.CTkFrame):
             fg_color="gray30", hover_color="gray20"
         ).pack(side="right")
 
-       
         self.scroll_container = ctk.CTkScrollableFrame(self, fg_color="transparent")
         self.scroll_container.pack(fill="both", expand=True, padx=10, pady=10)
         
@@ -54,8 +52,6 @@ class MyRentalsFrame(ctk.CTkFrame):
             return
 
         for r in rentals:
-            # --- DEFENSIVE DATA LOADING ---
-            # Using .get() prevents KeyError if fields are missing or null in MongoDB
             status = r.get("status", "Pending")
             brand = r.get("brand") if r.get("brand") is not None else "Unknown"
             model = r.get("model") if r.get("model") is not None else "Vehicle"
@@ -77,12 +73,29 @@ class MyRentalsFrame(ctk.CTkFrame):
             card = ctk.CTkFrame(self.scroll_container, corner_radius=12, border_width=1, border_color=color)
             card.pack(fill="x", padx=15, pady=8)
 
-            # --- LEFT SECTION: INFO ---
+            # --- LEFT SECTION: INFO AND REJECTION LOGIC ---
+            # Using an internal alignment container to stack the details and low stock warnings neatly
+            text_container = ctk.CTkFrame(card, fg_color="transparent")
+            text_container.pack(side="left", padx=20, pady=15, fill="both", expand=True)
+
             info_text = f"{brand} {model} ({year})\n{days} Days — Total: KES {total:,.2f}"
             ctk.CTkLabel(
-                card, text=info_text, justify="left", 
+                text_container, text=info_text, justify="left", 
                 font=("Arial", 14, "bold")
-            ).pack(side="left", padx=20, pady=15)
+            ).pack(anchor="w")
+            
+            # Check if this particular record has a rejection explanation appended to it
+            rejection_reason = r.get("rejection_reason")
+            if status == "Rejected" and rejection_reason:
+                reason_lbl = ctk.CTkLabel(
+                    text_container, 
+                    text=rejection_reason, 
+                    justify="left",
+                    wraplength=480,  # Enforces reliable visual layout nesting on smaller resolution boxes
+                    font=("Arial", 11, "italic"), 
+                    text_color="#E74C3C"
+                )
+                reason_lbl.pack(anchor="w", pady=(6, 0))
             
             # --- RIGHT SECTION: STATUS & ACTIONS ---
             status_container = ctk.CTkFrame(card, fg_color="transparent")
@@ -112,7 +125,6 @@ class MyRentalsFrame(ctk.CTkFrame):
 
     def return_process(self, rental):
         """Processes the return by updating Rentals, Cars, and Model Stock"""
-        # Safety check for the brand name to avoid 'None' in the popup
         v_name = rental.get('brand')
         if not v_name:
             v_name = "Vehicle"
@@ -122,7 +134,7 @@ class MyRentalsFrame(ctk.CTkFrame):
                 # 1. Update Rental Status
                 rentals_collection.update_one(
                     {"_id": rental["_id"]}, 
-                    {"set": {
+                    {"$set": {
                         "status": "Completed", 
                         "actual_return_date": datetime.now()
                     }}

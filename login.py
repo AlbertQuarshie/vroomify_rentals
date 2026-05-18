@@ -37,11 +37,18 @@ class LoginApp(ctk.CTkFrame):
             return 
             
         user = users_collection.find_one({"email": email, "password": password}) 
+        
         if user: 
-            role = user.get("role", "user") 
+            role = user.get("role", "user")  # Pulls "admin" or "user" dynamically from MongoDB
             display_name = user.get("first_name", "User")
-            messagebox.showinfo("Success", f"Welcome back, {display_name}!") 
-            # No self.destroy() here; handled by app.py's switch_page
+            
+            # Custom welcome alert message depending on authority role
+            if role == "admin":
+                messagebox.showinfo("Success", "Welcome back, Admin!") 
+            else:
+                messagebox.showinfo("Success", f"Welcome back, {display_name}!") 
+            
+            # Forward data cleanly to navigation engine callback
             self.on_success(role, display_name) 
         else:
             messagebox.showerror("Error", "Invalid email or password")
