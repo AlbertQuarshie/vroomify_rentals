@@ -11,6 +11,7 @@ class AdminDashboard(ctk.CTkFrame):
         super().__init__(master)
         self.on_logout = on_logout
 
+        # --- Sidebar Layout ---
         self.sidebar = ctk.CTkFrame(self, width=200)
         self.sidebar.pack(side="left", fill="y")
 
@@ -34,7 +35,7 @@ class AdminDashboard(ctk.CTkFrame):
             command=self.logout
         ).pack(pady=30, padx=20)
 
-       
+        # --- Main Layout Canvas ---
         self.main = ctk.CTkFrame(self)
         self.main.pack(fill="both", expand=True, padx=20, pady=20)
 
@@ -46,9 +47,10 @@ class AdminDashboard(ctk.CTkFrame):
             widget.destroy()
 
     def show_stats(self):
-        """Displays the high-level overview statistics cards"""
+        """Displays interactive KPI summary cards and lists recent transactions"""
         self.clear_main_area()
-        ctk.CTkLabel(self.main, text="System Overview", font=("Arial", 28, "bold")).pack(pady=20)
+        
+        ctk.CTkLabel(self.main, text="System Overview", font=("Arial", 28, "bold")).pack(pady=(10, 20), anchor="w", padx=20)
 
         # Live data aggregation from MongoDB
         total_cars = cars_collection.count_documents({})
@@ -57,12 +59,78 @@ class AdminDashboard(ctk.CTkFrame):
         pending_requests = rentals_collection.count_documents({"status": "Pending"})
 
         stats_frame = ctk.CTkFrame(self.main, fg_color="transparent")
-        stats_frame.pack(pady=20)
+        stats_frame.pack(pady=(0, 25), fill="x", padx=10)
+        stats_frame.columnconfigure((0, 1, 2, 3), weight=1)
 
-        ctk.CTkLabel(stats_frame, text=f"Total Fleet\n{total_cars}", width=160, height=80, fg_color="gray25", corner_radius=10).grid(row=0, column=0, padx=10)
-        ctk.CTkLabel(stats_frame, text=f"Available\n{available_cars}", width=160, height=80, fg_color="#239B56", corner_radius=10).grid(row=0, column=1, padx=10)
-        ctk.CTkLabel(stats_frame, text=f"Active Rentals\n{rented_cars}", width=160, height=80, fg_color="#2E86C1", corner_radius=10).grid(row=0, column=2, padx=10)
-        ctk.CTkLabel(stats_frame, text=f"PENDING\n{pending_requests}", width=160, height=80, fg_color="#D35400", corner_radius=10).grid(row=0, column=3, padx=10)
+        # --- CLICKABLE KPI CARDS ---
+        # Changed fields from CTkLabel to CTkButton with text configurations
+        ctk.CTkButton(
+            stats_frame, text=f"Total Fleet\n\n{total_cars}", font=("Arial", 14, "bold"),
+            width=160, height=100, fg_color="gray25", hover_color="gray30", corner_radius=10,
+            command=self.show_cars_section
+        ).grid(row=0, column=0, padx=10, sticky="nsew")
+
+        ctk.CTkButton(
+            stats_frame, text=f"Available\n\n{available_cars}", font=("Arial", 14, "bold"),
+            width=160, height=100, fg_color="#239B56", hover_color="#1E8449", corner_radius=10,
+            command=self.show_cars_section
+        ).grid(row=0, column=1, padx=10, sticky="nsew")
+
+        ctk.CTkButton(
+            stats_frame, text=f"Active Rentals\n\n{rented_cars}", font=("Arial", 14, "bold"),
+            width=160, height=100, fg_color="#2E86C1", hover_color="#2471A3", corner_radius=10,
+            command=self.show_rentals_section
+        ).grid(row=0, column=2, padx=10, sticky="nsew")
+
+        ctk.CTkButton(
+            stats_frame, text=f"Pending Requests\n\n{pending_requests}", font=("Arial", 14, "bold"),
+            width=160, height=100, fg_color="#D35400", hover_color="#BA4A00", corner_radius=10,
+            command=self.show_rentals_section
+        ).grid(row=0, column=3, padx=10, sticky="nsew")
+
+        # --- RECENT RENTALS SECTION ---
+        ctk.CTkLabel(self.main, text="Recent Activity Logs", font=("Arial", 18, "bold")).pack(anchor="w", padx=20, pady=(10, 5))
+        
+        # Transparent border structure acting as a table background frame
+        table_background = ctk.CTkFrame(self.main, fg_color=("#EAECEE", "#242424"), corner_radius=8, border_width=1, border_color="#333333")
+        table_background.pack(fill="both", expand=True, padx=20, pady=(5, 15))
+
+        # Dynamic Content Container
+        scroll_table = ctk.CTkScrollableFrame(table_background, fg_color="transparent")
+        scroll_table.pack(fill="both", expand=True, padx=5, pady=5)
+        scroll_table.columnconfigure((0, 1, 2, 3, 4), weight=1)
+
+        # Table Header Row Strings
+        headers = ["Customer", "Vehicle Model", "Duration", "Total Price", "Status"]
+        for col_idx, text in enumerate(headers):
+            ctk.CTkLabel(scroll_table, text=text, font=("Arial", 12, "bold"), text_color="#888888").grid(row=0, column=col_idx, pady=10, padx=10, sticky="w")
+
+        # Query entries sorting downwards from the most recent timestamp
+        recent_rentals = list(rentals_collection.find().sort("booking_date", -1).limit(15))
+
+        if not recent_rentals:
+            ctk.CTkLabel(scroll_table, text="No transactional history found.", font=("Arial", 14, "italic")).grid(row=1, column=0, columnspan=5, pady=40)
+            return
+
+        # Populate rows cleanly mapping values across table cells
+        for row_idx, rental in enumerate(recent_rentals, start=1):
+            # Safe Fallback Key Fetching
+            user = rental.get("username", "Unknown User")
+            vehicle = f"{rental.get('brand', '')} {rental.get('model', 'Vehicle')}".strip()
+            days = f"{rental.get('days', 0)} Days"
+            price = f"${float(rental.get('total_price', 0)):,.2f}"
+            status = str(rental.get("status", "Pending"))
+
+            # Dynamic Text Colors based on row field states
+            status_colors = {"Completed": "#239B56", "Pending": "#D35400", "Approved": "#2E86C1", "Rejected": "#922B21"}
+            current_status_color = status_colors.get(status, "#AAAAAA")
+
+            # Packing elements using clear structural alignments
+            ctk.CTkLabel(scroll_table, text=user, font=("Arial", 13, "bold")).grid(row=row_idx, column=0, pady=8, padx=10, sticky="w")
+            ctk.CTkLabel(scroll_table, text=vehicle, font=("Arial", 13)).grid(row=row_idx, column=1, pady=8, padx=10, sticky="w")
+            ctk.CTkLabel(scroll_table, text=days, font=("Arial", 13)).grid(row=row_idx, column=2, pady=8, padx=10, sticky="w")
+            ctk.CTkLabel(scroll_table, text=price, font=("Arial", 13, "bold")).grid(row=row_idx, column=3, pady=8, padx=10, sticky="w")
+            ctk.CTkLabel(scroll_table, text=status, font=("Arial", 12, "bold"), text_color=current_status_color).grid(row=row_idx, column=4, pady=8, padx=10, sticky="w")
 
     def show_cars_section(self):
         self.clear_main_area()
