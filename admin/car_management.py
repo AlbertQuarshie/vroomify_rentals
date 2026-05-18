@@ -28,7 +28,7 @@ class CarManagementFrame(ctk.CTkFrame):
         self.brand_entry = self.create_input("Brand (e.g., Toyota)")
         self.model_entry = self.create_input("Model (e.g., Camry)")
         self.year_entry = self.create_input("Year")
-        self.price_entry = self.create_input("Daily Price ($)")
+        self.price_entry = self.create_input("Daily Price (KES)")
         self.plate_entry = self.create_input("Specific Plate Number")
 
         # Image Display Area
@@ -182,7 +182,7 @@ class CarManagementFrame(ctk.CTkFrame):
             if m:
                 self.tree.insert("", "end", values=(
                     car.get("plate_number"), m.get("brand"), m.get("model"), 
-                    f"${m.get('price')}", car.get("status")
+                    f"KES {m.get('price')}", car.get("status")
                 ))
 
     def delete_car(self):

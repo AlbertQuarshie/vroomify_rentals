@@ -17,7 +17,7 @@ class AdminDashboard(ctk.CTkFrame):
 
         ctk.CTkLabel(
             self.sidebar, 
-            text="ADMIN PANEL", 
+            text="VROOMIFY ADMIN PANEL", 
             font=("Arial", 20, "bold")
         ).pack(pady=20)
 
@@ -118,7 +118,7 @@ class AdminDashboard(ctk.CTkFrame):
             user = rental.get("username", "Unknown User")
             vehicle = f"{rental.get('brand', '')} {rental.get('model', 'Vehicle')}".strip()
             days = f"{rental.get('days', 0)} Days"
-            price = f"${float(rental.get('total_price', 0)):,.2f}"
+            price = f"KES {float(rental.get('total_price', 0)):,.2f}"
             status = str(rental.get("status", "Pending"))
 
             # Dynamic Text Colors based on row field states

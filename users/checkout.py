@@ -46,7 +46,7 @@ class CheckoutWindow(ctk.CTkToplevel):
             ("Vehicle Brand", model_data['brand']),
             ("Model Name", model_data['model']),
             ("Model Year", str(model_data['year'])),
-            ("Daily Rate", f"${model_data['price']:,.2f}")
+            ("Daily Rate", f"KES {model_data['price']:,.2f}")
         ]
         
         for idx, (lbl, val) in enumerate(details):
@@ -87,7 +87,7 @@ class CheckoutWindow(ctk.CTkToplevel):
 
         # Centered the calculation readout within the high-contrast bar container
         self.total_label = ctk.CTkLabel(
-            self.total_bar, text="Estimated Total: $0.00", 
+            self.total_bar, text="Estimated Total: KES 0.00", 
             font=(self.font_family, 15, "bold"), text_color=("#2E86C1", "#5DADE2")
         )
         self.total_label.pack(side="left", padx=15)
@@ -105,17 +105,18 @@ class CheckoutWindow(ctk.CTkToplevel):
         try:
             days_input = self.days_entry.get().strip()
             if not days_input:
-                self.total_label.configure(text="Estimated Total: $0.00")
+                self.total_label.configure(text="Estimated Total: KES 0.00")
                 return
                 
             days = int(days_input)
             if days <= 0: raise ValueError
             
             total = days * self.model_data['price']
-            self.total_label.configure(text=f"Estimated Total: ${total:,.2f}")
+            self.total_label.configure(text=f"Estimated Total: KES{total:,.2f}")
         except ValueError: 
-            self.total_label.configure(text="Estimated Total: $--.-- (Invalid Day Count)")
+            self.total_label.configure(text="Estimated Total: KES--.-- (Invalid Day Count)")
 
+    
     def submit_request(self):
         try:
             days_input = self.days_entry.get().strip()

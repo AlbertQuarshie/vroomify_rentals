@@ -162,7 +162,7 @@ class RentalApprovalsFrame(ctk.CTkFrame):
         price_frame.pack(side="left", padx=40)
         
         ctk.CTkLabel(price_frame, text=f"{r.get('days', 0)} Days", font=("Arial", 14)).pack()
-        ctk.CTkLabel(price_frame, text=f"Total: ${r.get('total_price', 0.0):.2f}", font=("Arial", 18, "bold"), text_color="#2ECC71").pack()
+        ctk.CTkLabel(price_frame, text=f"Total: KES {r.get('total_price', 0.0):.2f}", font=("Arial", 18, "bold"), text_color="#2ECC71").pack()
 
         # Right Action Section
         right_frame = ctk.CTkFrame(card, fg_color="transparent")

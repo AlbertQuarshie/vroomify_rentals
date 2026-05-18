@@ -33,8 +33,8 @@ class FinancesFrame(ctk.CTkFrame):
             kpi_frame = ctk.CTkFrame(self.container, fg_color="transparent")
             kpi_frame.pack(fill="x", pady=10)
 
-            self.create_kpi_card(kpi_frame, "Total Revenue", f"${total_revenue:,.2f}", "#239B56", 0)
-            self.create_kpi_card(kpi_frame, "Avg. Per Rental", f"${avg_rev:,.2f}", "#2E86C1", 1)
+            self.create_kpi_card(kpi_frame, "Total Revenue", f"KES {total_revenue:,.2f}", "#239B56", 0)
+            self.create_kpi_card(kpi_frame, "Avg. Per Rental", f"KES {avg_rev:,.2f}", "#2E86C1", 1)
             self.create_kpi_card(kpi_frame, "Completed Deals", str(total_count), "#D35400", 2)
 
             # Process chart data with correct database key mappings

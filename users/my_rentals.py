@@ -78,7 +78,7 @@ class MyRentalsFrame(ctk.CTkFrame):
             card.pack(fill="x", padx=15, pady=8)
 
             # --- LEFT SECTION: INFO ---
-            info_text = f"{brand} {model} ({year})\n{days} Days — Total: ${total:,.2f}"
+            info_text = f"{brand} {model} ({year})\n{days} Days — Total: KES {total:,.2f}"
             ctk.CTkLabel(
                 card, text=info_text, justify="left", 
                 font=("Arial", 14, "bold")
@@ -122,7 +122,7 @@ class MyRentalsFrame(ctk.CTkFrame):
                 # 1. Update Rental Status
                 rentals_collection.update_one(
                     {"_id": rental["_id"]}, 
-                    {"$set": {
+                    {"set": {
                         "status": "Completed", 
                         "actual_return_date": datetime.now()
                     }}

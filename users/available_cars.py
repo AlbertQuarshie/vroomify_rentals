@@ -109,7 +109,7 @@ class AvailableCarsFrame(ctk.CTkFrame):
             
             # --- PRICE LABEL ---
             price_color = "#2ECC71" if is_available else "gray50"
-            ctk.CTkLabel(card, text=f"${model['price']}/day", font=("Arial", 18), text_color=price_color).pack(pady=5)
+            ctk.CTkLabel(card, text=f"KES {model['price']}/day", font=("Arial", 18), text_color=price_color).pack(pady=5)
             
             # --- ACTION BUTTON ---
             if is_available:
