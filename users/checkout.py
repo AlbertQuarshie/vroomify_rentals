@@ -9,35 +9,120 @@ class CheckoutWindow(ctk.CTkToplevel):
         self.model_data = model_data
         self.username = username
         
+        # --- Window Setup & Constraints ---
         self.title("Request Rental - Vroomify")
-        self.geometry("450x500")
+        self.geometry("460x520")  # Tailored height to completely remove any bottom gap
+        self.resizable(False, False)
         self.attributes('-topmost', True)
-
-        ctk.CTkLabel(self, text="Rental Request", font=("Arial", 22, "bold")).pack(pady=20)
         
-        # Summary
-        summary = f"Car: {model_data['brand']} {model_data['model']}\nYear: {model_data['year']}\nRate: ${model_data['price']}/day"
-        ctk.CTkLabel(self, text=summary, justify="left").pack(pady=10)
+        # Color Palette Variables
+        self.font_family = "Arial"
+        self.primary_blue = "#3498DB"
+        self.dark_accent = "#2C3E50"
 
-        self.days_entry = ctk.CTkEntry(self, placeholder_text="Number of days")
-        self.days_entry.pack(pady=20, padx=60, fill="x")
+        # --- 1. Header Title Section ---
+        ctk.CTkLabel(
+            self, text="RENTAL REQUEST", 
+            font=(self.font_family, 22, "bold"), 
+            text_color=self.primary_blue
+        ).pack(pady=(30, 15))
+        
+        # --- 2. Information Card Box ---
+        self.vehicle_card = ctk.CTkFrame(
+            self, fg_color=("#F5F5F5", "#242424"), 
+            corner_radius=12, border_width=1, border_color=("#E0E0E0", "#333333")
+        )
+        self.vehicle_card.pack(fill="x", padx=40, pady=5)
 
-        self.total_label = ctk.CTkLabel(self, text="Estimated Total: $0.00", font=("Arial", 16, "bold"))
-        self.total_label.pack(pady=10)
+        card_content = ctk.CTkFrame(self.vehicle_card, fg_color="transparent")
+        card_content.pack(padx=20, pady=15, fill="x")
+        
+        # Using a balanced grid inside the card for pixel-perfect vertical alignment
+        card_content.columnconfigure(0, weight=1)
+        card_content.columnconfigure(1, weight=1)
+
+        # Dynamic Data Row Mappings
+        details = [
+            ("Vehicle Brand", model_data['brand']),
+            ("Model Name", model_data['model']),
+            ("Model Year", str(model_data['year'])),
+            ("Daily Rate", f"${model_data['price']:,.2f}")
+        ]
+        
+        for idx, (lbl, val) in enumerate(details):
+            # Left aligned descriptive label strings
+            ctk.CTkLabel(
+                card_content, text=lbl, font=(self.font_family, 13), 
+                text_color="#888888", anchor="w"
+            ).grid(row=idx, column=0, pady=4, sticky="w")
+            
+            # Right aligned formatted context data values
+            ctk.CTkLabel(
+                card_content, text=val, font=(self.font_family, 14, "bold"), 
+                text_color=("#222222", "#ECF0F1"), anchor="e"
+            ).grid(row=idx, column=1, pady=4, sticky="e")
+
+        # --- 3. Interaction Fields & Calculation Layout ---
+        input_frame = ctk.CTkFrame(self, fg_color="transparent")
+        input_frame.pack(fill="x", padx=40, pady=20)
+
+        ctk.CTkLabel(
+            input_frame, text="How many days would you like to rent?", 
+            font=(self.font_family, 13, "bold"), text_color=("#555555", "#AAAAAA")
+        ).pack(anchor="w", pady=(0, 8))
+
+        self.days_entry = ctk.CTkEntry(
+            input_frame, placeholder_text="Enter number of days (e.g. 5)",
+            height=45, font=(self.font_family, 14),
+            border_width=1, border_color=("#BDC3C7", "#444444"),
+            corner_radius=8
+        )
+        self.days_entry.pack(fill="x", pady=(0, 15))
         self.days_entry.bind("<KeyRelease>", self.update_total)
 
-        ctk.CTkButton(self, text="Send Request for Approval", fg_color="#2874A6", command=self.submit_request).pack(pady=20, padx=60, fill="x")
+        # Highlight Accent Bar for Total Calculation
+        self.total_bar = ctk.CTkFrame(input_frame, fg_color=("#EAEDED", "#1A1A1A"), corner_radius=8, height=50)
+        self.total_bar.pack(fill="x")
+        self.total_bar.pack_propagate(False)
+
+        # Centered the calculation readout within the high-contrast bar container
+        self.total_label = ctk.CTkLabel(
+            self.total_bar, text="Estimated Total: $0.00", 
+            font=(self.font_family, 15, "bold"), text_color=("#2E86C1", "#5DADE2")
+        )
+        self.total_label.pack(side="left", padx=15)
+
+        # --- 4. Main Submission Button ---
+        self.submit_btn = ctk.CTkButton(
+            self, text="SEND REQUEST FOR APPROVAL", 
+            height=50, font=(self.font_family, 13, "bold"),
+            fg_color=self.primary_blue, hover_color="#2980B9",
+            corner_radius=8, command=self.submit_request
+        )
+        self.submit_btn.pack(fill="x", padx=40, pady=(5, 25))
 
     def update_total(self, event=None):
         try:
-            days = int(self.days_entry.get())
+            days_input = self.days_entry.get().strip()
+            if not days_input:
+                self.total_label.configure(text="Estimated Total: $0.00")
+                return
+                
+            days = int(days_input)
+            if days <= 0: raise ValueError
+            
             total = days * self.model_data['price']
             self.total_label.configure(text=f"Estimated Total: ${total:,.2f}")
-        except: self.total_label.configure(text="Estimated Total: $0.00")
+        except ValueError: 
+            self.total_label.configure(text="Estimated Total: $--.-- (Invalid Day Count)")
 
     def submit_request(self):
         try:
-            days = int(self.days_entry.get())
+            days_input = self.days_entry.get().strip()
+            if not days_input:
+                raise ValueError
+                
+            days = int(days_input)
             if days <= 0: raise ValueError
 
             rental_request = {
@@ -49,7 +134,7 @@ class CheckoutWindow(ctk.CTkToplevel):
                 "days": days,
                 "total_price": days * self.model_data['price'],
                 "booking_date": datetime.now(),
-                "status": "Pending" # Essential for admin filtering
+                "status": "Pending"
             }
             
             rentals_collection.insert_one(rental_request)
