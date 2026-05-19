@@ -1,6 +1,6 @@
 import customtkinter as ctk
 from tkinter import messagebox, ttk, filedialog
-from mongodb import db, cars_collection  # Assuming 'db' is your database object
+from mongodb import db, cars_collection 
 from bson.objectid import ObjectId
 from PIL import Image
 import os
@@ -40,7 +40,7 @@ class CarManagementFrame(ctk.CTkFrame):
         
         ctk.CTkButton(self.form_frame, text="Import Image", command=self.import_image, fg_color="#2874A6").pack(pady=5, padx=20, fill="x")
 
-        # Action Buttons
+        # Action Buttons Layout Setup
         self.add_btn = ctk.CTkButton(self.form_frame, text="Add New to Fleet", fg_color="#1E8449", command=self.save_car)
         self.add_btn.pack(pady=(20, 5), padx=20, fill="x")
 
@@ -59,7 +59,7 @@ class CarManagementFrame(ctk.CTkFrame):
         self.table_frame = ctk.CTkFrame(self)
         self.table_frame.grid(row=0, column=1, padx=10, pady=10, sticky="nsew")
         
-        # Configure Table Columns
+        # Configure Table Structural Grid Fields
         cols = ("Plate", "Brand", "Model", "Price", "Status")
         self.tree = ttk.Treeview(self.table_frame, columns=cols, show='headings')
         
@@ -73,6 +73,7 @@ class CarManagementFrame(ctk.CTkFrame):
         self.load_table()
 
     def create_input(self, placeholder):
+        """Generates standard entry fields for details input form layout"""
         entry = ctk.CTkEntry(self.form_frame, placeholder_text=placeholder)
         entry.pack(pady=8, padx=20, fill="x")
         return entry
@@ -80,13 +81,14 @@ class CarManagementFrame(ctk.CTkFrame):
     # --- LOGIC ---
 
     def import_image(self):
+        """Launches directory path lookups for storing local vehicle graphics assets"""
         file_path = filedialog.askopenfilename(filetypes=[("Image Files", "*.png *.jpg *.jpeg")])
         if file_path:
             self.image_path = file_path
             self.image_label.configure(text="Image Selected ✅")
 
     def on_car_select(self, event):
-        """Fetches data from BOTH collections when a row is clicked"""
+        """Fetches and merges details data from both collections into form fields on row click"""
         selected = self.tree.selection()
         if not selected: return
 
@@ -111,12 +113,12 @@ class CarManagementFrame(ctk.CTkFrame):
             self.image_path = model_details.get('image', '')
             self.image_label.configure(text="Image Loaded" if self.image_path else "No Image")
             
-            # Switch to Edit Mode
+            # Shift action control modes
             self.add_btn.configure(state="disabled")
             self.update_btn.configure(state="normal")
 
     def save_car(self):
-        """Logic for adding a brand new car and checking if model exists"""
+        """Validates inputs and records new inventory units alongside checking shared model parameters"""
         brand, model, plate = self.brand_entry.get(), self.model_entry.get(), self.plate_entry.get()
         
         if not all([brand, model, plate]):
@@ -124,7 +126,7 @@ class CarManagementFrame(ctk.CTkFrame):
             return
 
         try:
-            # 1. Handle car_models
+            # 1. Evaluate shared car models collection metrics
             model_record = car_models_col.find_one({"brand": brand, "model": model})
             if not model_record:
                 model_id = car_models_col.insert_one({
@@ -136,7 +138,7 @@ class CarManagementFrame(ctk.CTkFrame):
                 model_id = model_record["_id"]
                 car_models_col.update_one({"_id": model_id}, {"$inc": {"total_stock": 1, "available_count": 1}})
 
-            # 2. Handle specific unit
+            # 2. Create specific structural index database entry for specific physical asset
             cars_collection.insert_one({
                 "model_id": model_id, "plate_number": plate, "status": "Available"
             })
@@ -148,14 +150,14 @@ class CarManagementFrame(ctk.CTkFrame):
             messagebox.showerror("Error", f"Failed to save: {e}")
 
     def update_car(self):
-        """Updates the model (for all units) and the plate (for this unit)"""
+        """Commits changes globally to base specifications catalog and updates registration fields"""
         if not self.selected_car_id: return
         
         unit = cars_collection.find_one({"_id": self.selected_car_id})
         model_id = unit["model_id"]
 
         try:
-            # Update Model Details (Universal)
+            # Universal model structural tracking synchronization updates
             car_models_col.update_one({"_id": model_id}, {"$set": {
                 "brand": self.brand_entry.get(),
                 "model": self.model_entry.get(),
@@ -164,7 +166,7 @@ class CarManagementFrame(ctk.CTkFrame):
                 "image": self.image_path
             }})
 
-            # Update Unit Details (Specific)
+            # Individual registration key updates
             cars_collection.update_one({"_id": self.selected_car_id}, {"$set": {
                 "plate_number": self.plate_entry.get()
             }})
@@ -176,6 +178,7 @@ class CarManagementFrame(ctk.CTkFrame):
             messagebox.showerror("Error", str(e))
 
     def load_table(self):
+        """Clears view fields and fetches aggregated active vehicle inventory dataset rows"""
         for i in self.tree.get_children(): self.tree.delete(i)
         for car in cars_collection.find():
             m = car_models_col.find_one({"_id": car["model_id"]})
@@ -186,9 +189,9 @@ class CarManagementFrame(ctk.CTkFrame):
                 ))
 
     def delete_car(self):
+        """Decrements shared catalog model item counts before dropping individual asset index tracking documents"""
         if not self.selected_car_id: return
         if messagebox.askyesno("Confirm", "Are you sure you want to delete this specific unit?"):
-            # Find the model_id to decrement stock before deleting unit
             unit = cars_collection.find_one({"_id": self.selected_car_id})
             car_models_col.update_one({"_id": unit["model_id"]}, {"$inc": {"total_stock": -1, "available_count": -1}})
             
@@ -197,6 +200,7 @@ class CarManagementFrame(ctk.CTkFrame):
             self.clear_entries()
 
     def clear_entries(self, reset_id=True):
+        """Resets layout component context configurations to blank states"""
         if reset_id:
             self.selected_car_id = None
             self.add_btn.configure(state="normal")

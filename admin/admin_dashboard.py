@@ -21,6 +21,7 @@ class AdminDashboard(ctk.CTkFrame):
             font=("Arial", 20, "bold")
         ).pack(pady=20)
 
+        # Navigation menu entries
         ctk.CTkButton(self.sidebar, text="Dashboard", command=self.show_stats).pack(pady=10, padx=20)
         ctk.CTkButton(self.sidebar, text="Cars", command=self.show_cars_section).pack(pady=10, padx=20)
         ctk.CTkButton(self.sidebar, text="Customers", command=self.show_customers).pack(pady=10, padx=20)
@@ -58,12 +59,12 @@ class AdminDashboard(ctk.CTkFrame):
         rented_cars = cars_collection.count_documents({"status": "Rented"})
         pending_requests = rentals_collection.count_documents({"status": "Pending"})
 
+        # KPI dashboard layout layout frame
         stats_frame = ctk.CTkFrame(self.main, fg_color="transparent")
         stats_frame.pack(pady=(0, 25), fill="x", padx=10)
         stats_frame.columnconfigure((0, 1, 2, 3), weight=1)
 
         # --- CLICKABLE KPI CARDS ---
-        # Changed fields from CTkLabel to CTkButton with text configurations
         ctk.CTkButton(
             stats_frame, text=f"Total Fleet\n\n{total_cars}", font=("Arial", 14, "bold"),
             width=160, height=100, fg_color="gray25", hover_color="gray30", corner_radius=10,
@@ -91,41 +92,39 @@ class AdminDashboard(ctk.CTkFrame):
         # --- RECENT RENTALS SECTION ---
         ctk.CTkLabel(self.main, text="Recent Activity Logs", font=("Arial", 18, "bold")).pack(anchor="w", padx=20, pady=(10, 5))
         
-        # Transparent border structure acting as a table background frame
         table_background = ctk.CTkFrame(self.main, fg_color=("#EAECEE", "#242424"), corner_radius=8, border_width=1, border_color="#333333")
         table_background.pack(fill="both", expand=True, padx=20, pady=(5, 15))
 
-        # Dynamic Content Container
+        # Scrollable container for logs data rows
         scroll_table = ctk.CTkScrollableFrame(table_background, fg_color="transparent")
         scroll_table.pack(fill="both", expand=True, padx=5, pady=5)
         scroll_table.columnconfigure((0, 1, 2, 3, 4), weight=1)
 
-        # Table Header Row Strings
+        # Set up log table headers
         headers = ["Customer", "Vehicle Model", "Duration", "Total Price", "Status"]
         for col_idx, text in enumerate(headers):
             ctk.CTkLabel(scroll_table, text=text, font=("Arial", 12, "bold"), text_color="#888888").grid(row=0, column=col_idx, pady=10, padx=10, sticky="w")
 
-        # Query entries sorting downwards from the most recent timestamp
+        # Fetch recent rentals tracking down from newest timestamp
         recent_rentals = list(rentals_collection.find().sort("booking_date", -1).limit(15))
 
         if not recent_rentals:
             ctk.CTkLabel(scroll_table, text="No transactional history found.", font=("Arial", 14, "italic")).grid(row=1, column=0, columnspan=5, pady=40)
             return
 
-        # Populate rows cleanly mapping values across table cells
+        # Populate transaction rows dynamically
         for row_idx, rental in enumerate(recent_rentals, start=1):
-            # Safe Fallback Key Fetching
             user = rental.get("username", "Unknown User")
             vehicle = f"{rental.get('brand', '')} {rental.get('model', 'Vehicle')}".strip()
             days = f"{rental.get('days', 0)} Days"
             price = f"KES {float(rental.get('total_price', 0)):,.2f}"
             status = str(rental.get("status", "Pending"))
 
-            # Dynamic Text Colors based on row field states
+            # Status colors assignment map
             status_colors = {"Completed": "#239B56", "Pending": "#D35400", "Approved": "#2E86C1", "Rejected": "#922B21"}
             current_status_color = status_colors.get(status, "#AAAAAA")
 
-            # Packing elements using clear structural alignments
+            # Grid labels cleanly across text columns
             ctk.CTkLabel(scroll_table, text=user, font=("Arial", 13, "bold")).grid(row=row_idx, column=0, pady=8, padx=10, sticky="w")
             ctk.CTkLabel(scroll_table, text=vehicle, font=("Arial", 13)).grid(row=row_idx, column=1, pady=8, padx=10, sticky="w")
             ctk.CTkLabel(scroll_table, text=days, font=("Arial", 13)).grid(row=row_idx, column=2, pady=8, padx=10, sticky="w")
@@ -133,25 +132,28 @@ class AdminDashboard(ctk.CTkFrame):
             ctk.CTkLabel(scroll_table, text=status, font=("Arial", 12, "bold"), text_color=current_status_color).grid(row=row_idx, column=4, pady=8, padx=10, sticky="w")
 
     def show_cars_section(self):
+        """Switches main frame to the fleet management view"""
         self.clear_main_area()
         car_section = CarManagementFrame(self.main)
         car_section.pack(fill="both", expand=True)
 
     def show_rentals_section(self):
+        """Switches main frame to the rental routing approvals table"""
         self.clear_main_area()
         rental_section = RentalApprovalsFrame(self.main)
         rental_section.pack(fill="both", expand=True)
         
     def show_finances(self):
-        """Displays the financial reports and charts"""
+        """Switches main frame to financial metric reporting view"""
         self.clear_main_area()
         FinancesFrame(self.main).pack(fill="both", expand=True)
 
     def show_customers(self):
-        """Displays the grid view of all registered users"""
+        """Switches main frame to the customer directory view"""
         self.clear_main_area()
         CustomersFrame(self.main).pack(fill="both", expand=True)
 
     def logout(self):
+        """Confirms logout action and executes callback script execution"""
         if messagebox.askyesno("Logout", "Are you sure you want to log out?"):
             self.on_logout()
