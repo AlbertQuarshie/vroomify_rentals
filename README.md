@@ -7,7 +7,7 @@
 ## B. Overview
 
 - A car renting platform whereby users log in and proceed to rent a vehicle of their choosing at the selected duration and price
--
+
 
 ### C. Installation
 
@@ -18,6 +18,13 @@
 ```bash
 git clone https://github.com/AlbertQuarshie/vroomify_rentals.git
 cd vroomify_rentals
+```
+2. Install the following imports:
+
+```bash
+pip install customtkinter
+pip install pymongo
+pip install pillow
 ```
 
 2. Run the Application
@@ -31,8 +38,8 @@ python app.py
 ### D. Usage
 
 1. Launch the App
-   Run the Python file.
-   You’ll be prompted to login and if you don't have an account you have to register
+-  Run the Python file.
+- You’ll be prompted to login and if you don't have an account you have to register
 
 2. Browse a variety of available cars
 
@@ -62,9 +69,10 @@ python app.py
 
 ## F. Tech Stack
 
-| Layer       | Technology     |
-| ----------- | -------------- |
-| Environment | Python 3.14.4  |
-| GUI         | Custom Tkinter |
-| Database    | Mongodb        |
-| Charts      | Matplottb      |
+| Layer           | Technology     |
+| ----------------| -------------- |
+| Environment     | Python 3.14.4  |
+| GUI             | Custom Tkinter |
+| Database        | Mongodb        |
+| Charts          | Matplottb      |
+| Image Processing|  Pillow        |  
