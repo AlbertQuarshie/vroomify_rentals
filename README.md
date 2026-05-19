@@ -27,7 +27,7 @@ pip install pymongo
 pip install pillow
 ```
 
-2. Run the Application
+3. Run the Application
 
 - The project requires Python 3.14 or later.
 
